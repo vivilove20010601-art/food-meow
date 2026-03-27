@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今天吃什麼喵～ 🐾 (強效同步修正版)</title>
+    <style>
+        :root {
+            /* 柔和粉色系調色盤 */
+            --primary-pink: #FFB6C1; /* 櫻花粉 */
+            --hover-pink: #FF69B4; /* 蜜桃粉 */
+            --focus-pink: #F8BBD0; /* 暖灰粉 */
+            --bg-light: #FFF0F5; /* 薰衣草背景 */
+            --card-bg: #FFFFFF;
+            --tag-bg: #FFE4E1;
+            --sub-tag-bg: #E0F7FA;
+            --sub-tag-text: #006064;
+        }
+
+        body {
+            font-family: 'Hiragino Maru Gothic Pro', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-light);
+            margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 5vh 0;
+            background-image: url('https://www.transparenttextures.com/patterns/claws.png'); 
+        }
+
+        /* 搜尋容器 */
+        .search-container { width: 95%; max-width: 600px; text-align: center; }
+        .search-container h1 { color: var(--hover-pink); font-size: 2.2rem; margin-bottom: 20px; text-shadow: 2px 2px 0px white; }
+
+        /* 搜尋輸入框 */
+        #searchInput {
+            width: 100%; padding: 18px 25px; font-size: 1.2rem; border-radius: 40px;
+            border: 3px solid var(--primary-pink); background: rgba(255, 255, 255, 0.95);
+            outline: none; box-shadow: 0 8px 20px rgba(255, 182, 193, 0.4); box-sizing: border-box;
+            transition: 0.3s;
+        }
+        #searchInput:focus { border-color: var(--focus-pink); }
+
+        /* 提示文字 */
+        .search-hint { margin-top: 12px; color: #888; font-size: 0.95rem; letter-spacing: 1px; }
+
+        /* 隨機按鈕區域 */
+        .random-area { margin-top: 20px; margin-bottom: 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        #randomBtn {
+            padding: 12px 28px; background-color: var(--primary-pink); color: white;
+            border: none; border-radius: 50px; font-size: 1.1rem; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 182, 193, 0.5); transition: 0.2s;
+            font-weight: bold;
+        }
+        #randomBtn:hover { background-color: var(--hover-pink); transform: scale(1.05); }
+        #randomBtn:disabled { background-color: #DDD; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        #dataStatus { color: #888; font-size: 0.85rem; height: 1.2rem; font-weight: bold; margin-top: 5px; }
+
+        /* 清單收合區域 */
+        .all-data-section { width: 95%; max-width: 650px; margin-top: 10px; text-align: right; }
+        #toggleBtn { color: #BBB; font-size: 0.8rem; cursor: pointer; text-decoration: underline; padding: 5px 10px; display: inline-block; }
+        
+        .hidden { display: none !important; }
+        
+        #summaryContent { 
+            background: rgba(255, 255, 255, 0.9); margin-top: 15px; border-radius: 12px; padding: 15px; 
+            max-height: 350px; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #EEE;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 8px;
+        }
+        
+        .summary-item { 
+            padding: 8px; font-size: 0.8rem; color: #666; background: #FFF; 
+            border-radius: 20px; border: 1px solid #F0F0F0; cursor: pointer; transition: 0.2s;
+            text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .summary-item:hover { 
+            background: var(--focus-pink); color: white; border-color: var(--focus-pink); 
+            transform: scale(1.05);
+        }
+
+        /* 結果展示卡片 */
+        #resultsList { width: 90%; max-width: 700px; display: flex; flex-direction: column; gap: 20px; padding: 20px 0 50px; min-height: 100px; }
+
+        .script-card {
+            background: var(--card-bg); border-radius: 20px; padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-left: 8px solid var(--primary-pink);
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .tag-group { margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .category-tag { background: var(--tag-bg); color: var(--hover-pink); padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
+        .drink-item-tag { background: var(--sub-tag-bg); color: var(--sub-tag-text); padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
+
+        .item-title { font-weight: bold; color: #333; font-size: 1.6rem; margin-bottom: 15px; display: block; border-bottom: 2px dashed var(--bg-light); padding-bottom: 8px; }
+        .recommend-text ul { list-style-type: none; padding: 0; margin: 0; }
+        .recommend-text li { position: relative; padding-left: 28px; margin-bottom: 10px; color: #555; line-height: 1.6; font-size: 1.1rem; }
+        .recommend-text li::before { content: "🍹"; position: absolute; left: 0; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .footer-cat { margin-top: auto; padding: 20px; color: #DDD; font-size: 0.7rem; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="search-container">
+        <h1>今天吃什麼喵～ 🐾</h1>
+        <input type="text" id="searchInput" placeholder="" autofocus>
+        <div class="search-hint">🔍 搜尋美食或點擊下方清單...</div>
+
+        <div class="random-area">
+            <button id="randomBtn" onclick="randomSelectMeow()">喵喵亂選 🎲</button>
+            <div id="dataStatus">準備就緒喵 🐾</div>
+        </div>
+    </div>
+
+    <div class="all-data-section">
+        <div id="toggleBtn">點擊查看完整清單 ⬇️</div>
+        <div id="summaryContent" class="hidden">
+            <div id="gridBody" class="summary-grid"></div>
+        </div>
+    </div>
+
+    <div id="resultsList"></div>
+    <div class="footer-cat">專屬飲食事典系統 🐾 讓喵喵幫你搞定午餐</div>
+
+    <script>
+        const scriptData = [
+            {"keyword":"便當","category":"主餐","drink":["無糖茶","烏龍茶"],"shop":["50嵐：四季春","七盞茶：芯月烏龍","清心福全：烏龍綠茶","UG：焙茶拿鐵","八曜和茶：和風烏龍"]},
+            {"keyword":"雞排","category":"小吃","drink":["珍珠奶茶","紅茶拿鐵"],"shop":["CoCo都可：珍珠奶茶","麻古茶坊：奶蓋紅茶","八曜和茶：烏龍拿鐵","UG：黑糖鮮奶"]},
+            {"keyword":"壽司","category":"日式","drink":["無糖綠茶","冷泡茶"],"shop":["五桐號：冷泡青茶","茶湯會：日式綠茶","八曜和茶：柚香烏龍"]},
+            {"keyword":"拉麵","category":"日式","drink":["無糖綠茶","烏龍茶"],"shop":["茶湯會：日式綠茶","一芳水果茶：青茶","八曜和茶：煎茶"]},
+            {"keyword":"火鍋","category":"中式","drink":["烏龍茶","麥茶"],"shop":["清心福全：青茶","麻古茶坊：烏龍奶茶","八曜和茶：蜜香烏龍"]},
+            {"keyword":"滷肉飯","category":"主餐","drink":["無糖青茶","冬瓜茶"],"shop":["清心福全：青茶","CoCo都可：冬瓜茶","UG：冷泡青茶"]},
+            {"keyword":"炒飯","category":"主餐","drink":["無糖茶","檸檬紅茶"],"shop":["50嵐：綠茶","麻古茶坊：檸檬紅茶","八曜和茶：蜜桃烏龍"]},
+            {"keyword":"牛肉麵","category":"主餐","drink":["酸梅湯","烏龍茶"],"shop":["COMEBUY：烏龍茶","五桐號：青茶","UG：冷泡烏龍"]},
+            {"keyword":"鹽酥雞","category":"小吃","drink":["珍珠奶茶","紅茶"],"shop":["50嵐：珍珠奶茶","CoCo都可：紅茶","麻古茶坊：百香氣泡茶"]},
+            {"keyword":"蚵仔煎","category":"小吃","drink":["綠茶","檸檬青茶"],"shop":["麻古茶坊：檸檬綠茶","50嵐：綠茶","八曜和茶：柚香綠茶"]},
+            {"keyword":"地瓜球","category":"小吃","drink":["青茶","冬瓜茶"],"shop":["清心福全：青茶","八曜和茶：柚香綠茶","麻古茶坊：野莓波波"]},
+            {"keyword":"章魚燒","category":"小吃","drink":["綠茶","煎茶"],"shop":["八曜和茶：煎茶","UG：冷泡茉莉","茶湯會：翡翠綠茶"]},
+            {"keyword":"炸雞","category":"小吃","drink":["可樂","水果茶"],"shop":["一芳：水果茶","麻古茶坊：氣泡飲","八曜和茶：蜜桃烏龍"]},
+            {"keyword":"麻辣燙","category":"中式","drink":["烏龍茶","仙草奶茶"],"shop":["清心福全：仙草奶茶","八曜和茶：烏龍拿鐵","UG：焙茶拿鐵"]},
+            {"keyword":"生魚片","category":"日式料理","drink":["玄米茶","冷泡綠"],"shop":["八曜和茶：煎茶","UG：冷泡茉莉","天仁：玄米綠茶"]},
+            {"keyword":"燒肉","category":"日式料理","drink":["烏龍茶","檸檬茶"],"shop":["八曜和茶：究極烏龍","麻古：檸檬綠","清心：烏龍綠"]},
+            {"keyword":"甜不辣","category":"小吃","drink":["冬瓜茶","青茶"],"shop":["清心：冬瓜青","八曜：柚香綠茶","CoCo：冬瓜茶"]},
+            {"keyword":"大腸包小腸","category":"小吃","drink":["紅茶","麥茶"],"shop":["50嵐：紅茶","八曜：焙香烏龍","春水堂：熟成紅茶"]},
+            {"keyword":"豬血糕","category":"小吃","drink":["綠茶","烏龍"],"shop":["清心：烏龍茶","八曜：和風烏龍","UG：冷泡茉莉"]},
+            {"keyword":"麻醬麵","category":"主餐","drink":["無糖茶","味噌湯"],"shop":["茶湯會：青茶","八曜：究極烏龍","春水堂：茉香綠茶"]},
+            {"keyword":"小籠包","category":"中式料理","drink":["烏龍茶","普洱"],"shop":["天仁：普洱茶","八曜：究極烏龍","春水堂：鐵觀音"]},
+            {"keyword":"排骨酥麵","category":"主餐","drink":["冬瓜茶","紅茶"],"shop":["清心：冬瓜茶","八曜：焙香烏龍","50嵐：紅茶"]},
+            {"keyword":"肉圓","category":"小吃","drink":["青茶","四神湯"],"shop":["清心：四季春","八曜：柚香綠茶","茶湯會：青茶"]},
+            {"keyword":"碗粿","category":"小吃","drink":["無糖綠","烏龍"],"shop":["八曜：煎茶","UG：冷泡茉莉","50嵐：四季春"]},
+            {"keyword":"潤餅","category":"輕食","drink":["無糖茶","豆漿"],"shop":["清心：烏龍茶","八曜：究極烏龍","天仁：茉莉綠"]},
+            {"keyword":"手捲","category":"日式料理","drink":["綠茶","玄米"],"shop":["八曜：煎茶","天仁：玄米綠","UG：冷泡茉莉"]},
+            {"keyword":"咖哩飯","category":"主餐","drink":["紅茶","綠茶"],"shop":["50嵐：紅茶","八曜：蜜桃烏龍","春水堂：熟成紅茶"]},
+            {"keyword":"甜甜圈","category":"甜品","drink":["咖啡","奶茶"],"shop":["UG：焙茶拿鐵","八曜：烏龍拿鐵","迷客夏：紅茶拿鐵"]},
+            {"keyword":"可麗露","category":"甜品","drink":["紅茶","伯爵茶"],"shop":["再睡5分鐘：日安紅","八曜：焙香烏龍","春水堂：熟成紅茶"]},
+            {"keyword":"提拉米蘇","category":"甜品","drink":["黑咖啡","拿鐵"],"shop":["UG：焙茶拿鐵","八曜：烏龍拿鐵","50嵐：拿鐵"]},
+            {"keyword":"布丁","category":"甜品","drink":["綠茶","紅茶"],"shop":["八曜：柚香綠茶","50嵐：紅茶","清心：綠茶"]},
+            {"keyword":"紅豆湯","category":"甜品","drink":["無糖茶"],"shop":["八曜：究極烏龍","天仁：茉莉綠","清心：烏龍茶"]},
+            {"keyword":"水餃","category":"中式料理","drink":["無糖茶","豆漿"],"shop":["清心福全：烏龍茶","50嵐：四季春","八曜和茶：究極烏龍"]},
+            {"keyword":"涼麵","category":"主餐","drink":["綠茶","味噌湯"],"shop":["茶湯會：翡翠綠茶","八曜和茶：柚香綠茶","UG：冷泡茉莉"]},
+            {"keyword":"紅豆餅","category":"甜品","drink":["無糖茶","鮮奶茶"],"shop":["迷客夏：大正紅茶拿鐵","八曜和茶：蜜桃奶蓋","UG：焙茶拿鐵"]},
+            {"keyword":"鬆餅","category":"甜品","drink":["奶蓋茶","紅茶"],"shop":["迷客夏：鐵觀音奶茶","50嵐：紅茶","八曜和茶：蜜桃奶蓋"]},
+            {"keyword":"蛋糕","category":"甜品","drink":["綠茶","奶茶"],"shop":["迷客夏：黑糖鮮奶","CoCo：奶茶","八曜和茶：蜜桃奶蓋"]},
+            {"keyword":"千層蛋糕","category":"甜品","drink":["綠茶","烏龍茶"],"shop":["鶴茶樓：青茶","50嵐：綠茶","八曜和茶：柚香烏龍"]},
+            {"keyword":"冰淇淋","category":"甜品","drink":["氣泡水果茶","綠茶"],"shop":["麻古：氣泡飲","CoCo：綠茶","UG：柚香綠茶"]},
+            {"keyword":"水果","category":"輕食","drink":["綜合水果茶"],"shop":["一芳：水果茶","八曜：柚香綠茶","麻古：百香氣泡"]},
+            {"keyword":"牛排","category":"西式","drink":["紅茶","黑咖啡"],"shop":["UG：焙茶拿鐵","麻古：紅茶","CoCo：紅茶拿鐵"]},
+            {"keyword":"義大利麵","category":"西式","drink":["紅茶","氣泡水果茶"],"shop":["50嵐：紅茶","麻古：百香氣泡茶","八曜：蜜桃烏龍"]},
+            {"keyword":"漢堡","category":"西式","drink":["氣泡飲","綠茶"],"shop":["麻古：氣泡飲","CoCo：綠茶","UG：柚香綠茶"]},
+            {"keyword":"披薩","category":"西式","drink":["CoCo：百香綠茶","麻古：氣泡飲","八曜：蜜桃烏龍"]},
+            {"keyword":"鍋貼","category":"小吃","drink":["無糖茶","烏龍茶"],"shop":["五桐號：青茶","清心：烏龍茶","八曜：煎茶"]},
+            {"keyword":"燒餅油條","category":"早餐","drink":["無糖茶","烏龍茶"],"shop":["清心：青茶","COMEBUY：烏龍茶","八曜：焙香烏龍"]},
+            {"keyword":"蛋餅","category":"早餐","drink":["奶茶","紅茶"],"shop":["CoCo：奶茶","清心：紅茶","UG：焙茶拿鐵"]},
+            {"keyword":"鐵板麵","category":"早餐","drink":["奶茶","紅茶"],"shop":["50嵐：奶茶","CoCo：紅茶","八曜：蜜桃烏龍"]},
+            {"keyword":"沙拉","category":"輕食","drink":["水果茶","綠茶"],"shop":["一芳：綜合水果茶","麻古：芒果綠茶","八曜：柚香綠茶"]},
+            {"keyword":"厚片吐司","category":"早餐","drink":["紅茶拿鐵"],"shop":["迷客夏：紅茶拿鐵","八曜：烏龍拿鐵","50嵐：奶茶"]}
+        ];
+
+        window.onload = function() {
+            const gridBody = document.getElementById('gridBody');
+            const dataStatus = document.getElementById('dataStatus');
+            const toggleBtn = document.getElementById('toggleBtn');
+            const summaryContent = document.getElementById('summaryContent');
+            const searchInput = document.getElementById('searchInput');
+            const resultsList = document.getElementById('resultsList');
+            const randomBtn = document.getElementById('randomBtn');
+
+            // 1. 初始化泡泡清單
+            const sortedData = [...scriptData].sort((a, b) => a.keyword.localeCompare(b.keyword, 'zh-TW'));
+            gridBody.innerHTML = sortedData.map(item => 
+                `<div class="summary-item" onclick="quickSearch('${item.keyword}')">${item.keyword}</div>`
+            ).join('');
+
+            // 2. 核心搜尋顯示函式
+            window.performSearch = function(term) {
+                resultsList.innerHTML = '';
+                if (!term || term === "") return;
+                
+                const matches = scriptData.filter(d => 
+                    d.keyword === term || d.keyword.includes(term) || d.category.includes(term)
+                );
+
+                if (matches.length === 0) {
+                    resultsList.innerHTML = '<div style="text-align:center; color:#999; margin-top:30px;">查無資料喵...🐈</div>';
+                    return;
+                }
+
+                matches.forEach(match => {
+                    const card = document.createElement('div');
+                    card.className = 'script-card';
+                    const drinkTags = match.drink.map(d => `<span class="drink-item-tag">💧 ${d}</span>`).join('');
+                    card.innerHTML = `
+                        <div class="tag-group"><span class="category-tag">🍴 ${match.category}</span>${drinkTags}</div>
+                        <span class="item-title">${match.keyword}</span>
+                        <div class="recommend-text"><ul>${match.shop.map(s => `<li>${s}</li>`).join('')}</ul></div>
+                    `;
+                    resultsList.appendChild(card);
+                });
+            };
+
+            // 3. 搜尋框監聽
+            searchInput.oninput = (e) => {
+                const val = e.target.value.trim();
+                if(val) {
+                    performSearch(val);
+                } else {
+                    resultsList.innerHTML = '';
+                    dataStatus.innerText = `準備就緒喵 🐾`;
+                }
+            };
+
+            // 4. 點選清單項目
+            window.quickSearch = function(keyword) {
+                searchInput.value = keyword;
+                performSearch(keyword);
+                summaryContent.classList.add('hidden');
+                toggleBtn.innerText = '點擊查看完整清單 ⬇️';
+                dataStatus.innerText = `找到關於「${keyword}」的推薦喵！`;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            // 5. 強效同步：隨機抽籤
+            window.randomSelectMeow = function() {
+                randomBtn.disabled = true;
+                resultsList.innerHTML = ''; // 清空結果區
+                
+                let count = 0;
+                let finalIdx = 0;
+
+                const timer = setInterval(() => {
+                    finalIdx = Math.floor(Math.random() * scriptData.length);
+                    const currentMeal = scriptData[finalIdx].keyword;
+                    
+                    // 動態更新搜尋框內容
+                    searchInput.value = currentMeal;
+                    dataStatus.innerText = `🐱 喵～選誰好呢... ${currentMeal}`;
+                    
+                    count++;
+                    if (count > 15) { // 動畫結束
+                        clearInterval(timer);
+                        
+                        const finalChoice = scriptData[finalIdx].keyword;
+                        searchInput.value = finalChoice; 
+                        
+                        // 【關鍵】：延遲 50ms 確保 DOM 與變數同步，再呼叫搜尋
+                        setTimeout(() => {
+                            window.performSearch(finalChoice); 
+                            dataStatus.innerText = `喵！今天決定吃「${finalChoice}」了！🐾`;
+                            randomBtn.disabled = false;
+                            
+                            // 平滑捲動
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }, 50);
+                    }
+                }, 80);
+            };
+
+            // 6. 收合清單
+            toggleBtn.onclick = function() {
+                const isHidden = summaryContent.classList.toggle('hidden');
+                toggleBtn.innerText = isHidden ? '點擊查看完整清單 ⬇️' : '點擊收合 ⬆️';
+            };
+        };
+    </script>
+</body>
+</html>
